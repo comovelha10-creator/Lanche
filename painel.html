@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Burger Rústico — Painel</title>
+<meta name="theme-color" content="#1C1208">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+  :root {
+    --bg: #1C1208; --bg2: #251808; --bg3: #2E1E0A;
+    --border: #4A2E12; --gold: #D4A017; --wood: #8B5E3C;
+    --wood-light: #C68642; --text: #F5E6C8; --text2: #A0845C;
+    --text3: #5C3D1E; --green: #5A8A3C; --red: #C0392B;
+    --blue: #3B82F6; --yellow: #F59E0B; --purple: #A78BFA;
+    --radius: 16px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Lato',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+  body::before {
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background: repeating-linear-gradient(92deg,transparent,transparent 2px,rgba(139,94,60,0.03) 2px,rgba(139,94,60,0.03) 4px),
+                repeating-linear-gradient(180deg,transparent,transparent 40px,rgba(0,0,0,0.06) 40px,rgba(0,0,0,0.06) 41px);
+  }
+
+  /* LOGIN */
+  #view-login {
+    position:relative; z-index:1;
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .login-box {
+    background:var(--bg2); border:1px solid var(--border); border-radius:24px;
+    padding:36px 28px; width:100%; max-width:400px; animation:fadeIn 0.5s ease;
+  }
+  .login-logo { font-family:'Playfair Display',serif; font-weight:800; font-size:1.8rem; margin-bottom:4px; }
+  .login-logo em { color:var(--gold); font-style:italic; }
+  .login-sub { color:var(--text2); font-size:0.85rem; margin-bottom:28px; }
+  .form-group { margin-bottom:14px; }
+  .form-group label { display:block; font-size:0.75rem; color:var(--text2); margin-bottom:6px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; }
+  .form-input {
+    background:var(--bg3); border:1px solid var(--border); color:var(--text);
+    border-radius:12px; padding:13px 14px; width:100%;
+    font-family:'Lato',sans-serif; font-size:0.9rem; transition:border-color 0.2s;
+  }
+  .form-input:focus { outline:none; border-color:var(--gold); }
+  .form-input::placeholder { color:var(--text3); }
+  .btn-gold {
+    background:linear-gradient(135deg,#8B5E3C,#D4A017); color:white; border:none;
+    border-radius:14px; padding:15px; width:100%;
+    font-family:'Playfair Display',serif; font-weight:700; font-size:1rem;
+    cursor:pointer; transition:all 0.2s; box-shadow:0 4px 20px rgba(212,160,23,0.3); margin-top:8px;
+  }
+  .btn-gold:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(212,160,23,0.4); }
+  .error-msg {
+    background:rgba(192,57,43,0.1); border:1px solid rgba(192,57,43,0.3);
+    border-radius:10px; padding:10px 14px; font-size:0.83rem; color:var(--red);
+    margin-bottom:14px; display:none;
+  }
+
+  /* HEADER */
+  header {
+    background:rgba(28,18,8,0.96); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border); padding:0 18px; height:62px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:100; position:relative;
+  }
+  .header-logo { font-family:'Playfair Display',serif; font-weight:700; font-size:1.15rem; }
+  .header-logo em { color:var(--gold); font-style:italic; }
+  .header-right { display:flex; align-items:center; gap:10px; }
+  .novos-badge {
+    background:linear-gradient(135deg,#8B5E3C,#D4A017); color:white;
+    border-radius:50px; padding:5px 14px; font-size:0.78rem; font-weight:700;
+    display:none; animation:pulseIn 0.4s ease;
+  }
+  @keyframes pulseIn { from{transform:scale(0)} to{transform:scale(1)} }
+  .logout-btn {
+    background:none; border:1px solid var(--border); color:var(--text2);
+    border-radius:50px; padding:6px 12px; font-size:0.78rem; cursor:pointer; transition:all 0.2s;
+  }
+  .logout-btn:hover { border-color:var(--red); color:var(--red); }
+
+  /* PAINEL */
+  #view-painel { display:none; position:relative; z-index:1; }
+  #view-painel.active { display:block; }
+
+  .painel-content { padding:20px; max-width:720px; margin:0 auto; }
+
+  .painel-header {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:20px; flex-wrap:wrap; gap:10px;
+  }
+  .painel-title { font-family:'Playfair Display',serif; font-weight:800; font-size:1.4rem; }
+  .painel-title em { color:var(--gold); font-style:italic; }
+  .status-live {
+    display:flex; align-items:center; gap:6px;
+    font-size:0.75rem; color:var(--green);
+  }
+  .dot-live { width:8px; height:8px; background:var(--green); border-radius:50%; animation:blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* PEDIDO CARD */
+  .pedidos-list { display:flex; flex-direction:column; gap:14px; }
+
+  .pedido-card {
+    background:linear-gradient(135deg,#251808,#2E1E0A);
+    border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px; transition:all 0.3s; animation:fadeIn 0.4s ease;
+  }
+  .pedido-card.novo {
+    border-color:var(--gold);
+    box-shadow:0 0 0 1px var(--gold), 0 4px 24px rgba(212,160,23,0.2);
+    animation:fadeIn 0.4s ease, novoPedidoPulse 2s ease 3;
+  }
+  @keyframes novoPedidoPulse {
+    0%,100%{box-shadow:0 0 0 1px var(--gold),0 4px 24px rgba(212,160,23,0.2)}
+    50%{box-shadow:0 0 0 4px var(--gold),0 8px 40px rgba(212,160,23,0.4)}
+  }
+
+  .pedido-top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .pedido-id { font-family:'Playfair Display',serif; font-weight:700; color:var(--gold); font-size:1.1rem; }
+  .pedido-hora { color:var(--text3); font-size:0.78rem; }
+
+  .status-pill { font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:50px; }
+  .s-recebido { background:rgba(212,160,23,0.15); color:var(--gold); }
+  .s-aceito { background:rgba(59,130,246,0.15); color:var(--blue); }
+  .s-preparando { background:rgba(245,158,11,0.15); color:var(--yellow); }
+  .s-saiu { background:rgba(167,139,250,0.15); color:var(--purple); }
+  .s-entregue { background:rgba(90,138,60,0.15); color:var(--green); }
+
+  .pedido-cliente { font-family:'Playfair Display',serif; font-weight:600; font-size:1rem; margin-bottom:4px; }
+  .pedido-endereco { color:var(--text2); font-size:0.83rem; margin-bottom:4px; }
+  .pedido-extras { color:var(--text3); font-size:0.78rem; line-height:1.6; margin-bottom:10px; }
+
+  .pedido-divider { border:none; border-top:1px solid var(--border); margin:12px 0; }
+
+  .pedido-itens { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+  .pedido-item { display:flex; justify-content:space-between; gap:8px; font-size:0.84rem; }
+  .pi-nome { color:var(--text2); flex:1; }
+  .pi-nome strong { color:var(--text); }
+  .pi-obs { color:var(--gold); font-size:0.72rem; font-style:italic; display:block; }
+  .pi-val { color:var(--text); font-weight:600; white-space:nowrap; }
+
+  .pedido-footer { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
+  .pedido-total { font-family:'Playfair Display',serif; font-weight:800; color:var(--gold); font-size:1.2rem; }
+  .pedido-pagto { background:var(--bg3); border:1px solid var(--border); border-radius:50px; padding:4px 12px; font-size:0.75rem; color:var(--text2); }
+
+  .pedido-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .act {
+    padding:9px 16px; border-radius:10px; border:none;
+    font-family:'Lato',sans-serif; font-size:0.82rem; font-weight:700;
+    cursor:pointer; transition:all 0.2s;
+  }
+  .act-aceitar { background:linear-gradient(135deg,#8B5E3C,#D4A017); color:white; box-shadow:0 2px 10px rgba(212,160,23,0.3); }
+  .act-aceitar:hover { transform:scale(1.04); }
+  .act-avancar { background:var(--bg3); color:var(--text); border:1px solid var(--border); }
+  .act-avancar:hover { border-color:var(--yellow); color:var(--yellow); }
+  .act-recusar { background:var(--bg3); color:var(--red); border:1px solid rgba(192,57,43,0.3); }
+  .act-recusar:hover { background:rgba(192,57,43,0.08); }
+
+  .empty-state { text-align:center; padding:64px 20px; color:var(--text2); }
+  .empty-state .icon { font-size:4rem; margin-bottom:16px; opacity:0.5; }
+  .empty-state p { font-family:'Playfair Display',serif; font-size:1.1rem; }
+  .empty-state span { font-size:0.82rem; color:var(--text3); display:block; margin-top:6px; }
+
+  .loading { text-align:center; padding:48px; color:var(--text2); position:relative; z-index:1; }
+  .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="view-login">
+  <div class="login-box">
+    <div class="login-logo">Burger <em>Rústico</em></div>
+    <div class="login-sub">Painel da loja — acesso restrito</div>
+    <div class="error-msg" id="login-error">Usuário ou senha incorretos.</div>
+    <div class="form-group">
+      <label>Usuário</label>
+      <input type="text" id="login-user" class="form-input" placeholder="Seu usuário">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="login-senha" class="form-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    </div>
+    <button class="btn-gold" onclick="fazerLogin()">Entrar no Painel</button>
+    <div style="margin-top:14px;text-align:center">
+      <a href="index.html" style="color:var(--text3);font-size:0.78rem;text-decoration:none">← Voltar ao início</a>
+    </div>
+  </div>
+</div>
+
+<!-- PAINEL -->
+<div id="view-painel">
+  <header>
+    <div class="header-logo">Burger <em>Rústico</em> <span style="font-size:0.7rem;color:var(--text3);font-weight:400;font-family:'Lato',sans-serif">Painel</span></div>
+    <div class="header-right">
+      <div class="novos-badge" id="novos-badge">0 novos</div>
+      <button class="logout-btn" onclick="fazerLogout()">Sair</button>
+    </div>
+  </header>
+
+  <div class="painel-content">
+    <div class="painel-header">
+      <div class="painel-title">Pedidos <em>Ativos</em></div>
+      <div class="status-live"><span class="dot-live"></span> Tempo real</div>
+    </div>
+    <div id="pedidos-list" class="pedidos-list">
+      <div class="loading"><div class="spinner"></div>Carregando pedidos...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAMRyjrwu9ai3TyWoNYiLI-T8lV_OTbknU",
+  authDomain: "sitelanch.firebaseapp.com",
+  projectId: "sitelanch",
+  storageBucket: "sitelanch.firebasestorage.app",
+  messagingSenderId: "29494207116",
+  appId: "1:29494207116:web:12a1cb66b0efac5c0391a9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const LOGIN = { usuario:'Gabriel', senha:'Gabriel' };
+const STATUS_NEXT = { recebido:'aceito', aceito:'preparando', preparando:'saiu', saiu:'entregue' };
+const STATUS_NEXT_LABEL = { recebido:'✅ Aceitar', aceito:'👨‍🍳 Preparando', preparando:'🛵 Saiu pra entrega', saiu:'🎉 Entregue' };
+
+let pedidos = {};
+let unsubPedidos = null;
+
+function fazerLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  if (user !== LOGIN.usuario || senha !== LOGIN.senha) {
+    errEl.style.display = 'block'; return;
+  }
+
+  document.getElementById('view-login').style.display = 'none';
+  document.getElementById('view-painel').classList.add('active');
+  iniciarPainel();
+}
+
+function fazerLogout() {
+  if (unsubPedidos) unsubPedidos();
+  location.reload();
+}
+
+function iniciarPainel() {
+  unsubPedidos = db.collection('pedidos')
+    .where('status', 'not-in', ['entregue', 'recusado'])
+    .orderBy('status')
+    .orderBy('criadoEm', 'desc')
+    .onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const data = change.doc.data();
+          if (pedidos[change.doc.id] === undefined) {
+            // É realmente novo (não só o carregamento inicial)
+            if (Object.keys(pedidos).length > 0) tocarSom();
+          }
+          pedidos[change.doc.id] = { id: change.doc.id, ...data };
+        }
+        if (change.type === 'modified') {
+          pedidos[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
+        }
+        if (change.type === 'removed') {
+          delete pedidos[change.doc.id];
+        }
+      });
+      renderPedidos();
+    }, err => {
+      // Fallback sem filtro composto se índice não existir
+      unsubPedidos = db.collection('pedidos')
+        .orderBy('criadoEm', 'desc')
+        .onSnapshot(snapshot => {
+          pedidos = {};
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (!['entregue','recusado'].includes(data.status)) {
+              pedidos[doc.id] = { id: doc.id, ...data };
+            }
+          });
+          renderPedidos();
+        });
+    });
+}
+
+function renderPedidos() {
+  const list = Object.values(pedidos).sort((a,b) => {
+    const ta = a.criadoEm ? a.criadoEm.toMillis() : 0;
+    const tb = b.criadoEm ? b.criadoEm.toMillis() : 0;
+    return tb - ta;
+  });
+
+  const novos = list.filter(p => p.status === 'recebido').length;
+  const badge = document.getElementById('novos-badge');
+  badge.textContent = novos + (novos === 1 ? ' novo' : ' novos');
+  badge.style.display = novos > 0 ? 'flex' : 'none';
+
+  const el = document.getElementById('pedidos-list');
+
+  if (list.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🍔</div>
+        <p>Nenhum pedido em aberto</p>
+        <span>Os novos pedidos aparecem aqui automaticamente</span>
+      </div>
+    `;
+    return;
+  }
+
+  el.innerHTML = list.map(p => {
+    const isNovo = p.status === 'recebido';
+    const hora = p.criadoEm ? new Date(p.criadoEm.toMillis()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--:--';
+    const nextStatus = STATUS_NEXT[p.status];
+    const nextLabel = STATUS_NEXT_LABEL[p.status];
+    const total = Number(p.total);
+
+    const extras = [
+      p.pontoReferencia ? `📍 ${p.pontoReferencia}` : '',
+      p.obsEntrega ? `📝 Entrega: ${p.obsEntrega}` : '',
+      p.contato ? `📞 ${p.contato}` : ''
+    ].filter(Boolean).join('  ·  ');
+
+    return `
+      <div class="pedido-card ${isNovo?'novo':''}" id="pc-${p.id}">
+        <div class="pedido-top">
+          <div>
+            <span class="pedido-id">#${String(p.codigo||'?').padStart(4,'0')}</span>
+            <span class="pedido-hora"> · ${hora}</span>
+          </div>
+          <span class="status-pill s-${p.status}">${getStatusLabel(p.status)}</span>
+        </div>
+        <div class="pedido-cliente">${p.nomeCliente}</div>
+        <div class="pedido-endereco">📦 ${p.endereco}</div>
+        ${extras ? `<div class="pedido-extras">${extras}</div>` : ''}
+        <hr class="pedido-divider">
+        <div class="pedido-itens">
+          ${(p.itens||[]).map(it => `
+            <div class="pedido-item">
+              <span class="pi-nome">
+                <strong>${it.quantidade}x</strong> ${it.nomeProduto}
+                ${it.observacao ? `<span class="pi-obs">↳ ${it.observacao}</span>` : ''}
+              </span>
+              <span class="pi-val">R$ ${Number(it.subtotal).toFixed(2).replace('.',',')}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="pedido-footer">
+          <div class="pedido-total">R$ ${total.toFixed(2).replace('.',',')}</div>
+          <div class="pedido-pagto">${p.formaPagamento}</div>
+        </div>
+        <div class="pedido-actions">
+          ${nextStatus ? `<button class="act act-${isNovo?'aceitar':'avancar'}" onclick="avancar('${p.id}','${nextStatus}')">${nextLabel}</button>` : ''}
+          ${isNovo ? `<button class="act act-recusar" onclick="recusar('${p.id}')">✕ Recusar</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function getStatusLabel(s) {
+  return { recebido:'🔔 Novo', aceito:'✅ Aceito', preparando:'👨‍🍳 Preparando', saiu:'🛵 Na entrega', entregue:'🎉 Entregue' }[s] || s;
+}
+
+async function avancar(id, novoStatus) {
+  await db.collection('pedidos').doc(id).update({ status: novoStatus });
+}
+
+async function recusar(id) {
+  if (!confirm('Recusar este pedido?')) return;
+  await db.collection('pedidos').doc(id).update({ status: 'recusado' });
+}
+
+function tocarSom() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime+0.12);
+    osc.frequency.setValueAtTime(880, ctx.currentTime+0.24);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.5);
+    osc.start(); osc.stop(ctx.currentTime+0.5);
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
