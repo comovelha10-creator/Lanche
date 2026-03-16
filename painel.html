@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lino — Painel da Loja</title>
+<meta name="theme-color" content="#1A0F06">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --wood-dark:#1A0F06; --wood-mid:#2A1406; --wood-card:#3D1F08;
+  --border:#6B3A10; --border-light:#8B5020;
+  --gold:#D4A017; --amber:#D4860A; --text:#F5E6C8;
+  --text2:#C8A878; --text3:#8B6030; --text4:#5C3A14;
+  --green:#4A7A28; --red:#A03020; --blue:#4080D0;
+  --yellow:#D09020; --purple:#9060C0; --radius:18px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Lato',sans-serif; background:var(--wood-dark); color:var(--text); min-height:100vh; position:relative; }
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    repeating-linear-gradient(175deg,rgba(80,40,10,0) 0px,rgba(80,40,10,0) 8px,rgba(60,30,8,0.18) 8px,rgba(60,30,8,0.18) 9px,rgba(80,40,10,0) 9px,rgba(80,40,10,0) 22px,rgba(40,20,5,0.12) 22px,rgba(40,20,5,0.12) 23px),
+    repeating-linear-gradient(88deg,transparent 0px,transparent 18px,rgba(120,70,20,0.05) 18px,rgba(120,70,20,0.05) 19px,transparent 19px,transparent 42px,rgba(80,40,10,0.07) 42px,rgba(80,40,10,0.07) 43px);
+}
+
+/* LOGIN */
+#view-login { position:relative; z-index:1; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+.login-box { background:linear-gradient(135deg,#3D1F08,#2A1406); border:1px solid var(--border); border-radius:24px; padding:36px 28px; width:100%; max-width:400px; animation:fadeIn 0.5s ease; box-shadow:0 12px 48px rgba(0,0,0,0.5); }
+.login-logo { font-family:'Playfair Display',serif; font-weight:800; font-size:1.8rem; margin-bottom:4px; }
+.login-logo em { color:var(--gold); font-style:italic; }
+.login-sub { color:var(--text3); font-size:0.85rem; margin-bottom:28px; }
+.f-group { margin-bottom:14px; }
+.f-group label { display:block; font-size:0.73rem; color:var(--text3); margin-bottom:6px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; }
+.f-input { background:rgba(26,15,6,0.8); border:1px solid var(--border); color:var(--text); border-radius:12px; padding:13px 14px; width:100%; font-family:'Lato',sans-serif; font-size:0.9rem; transition:border-color 0.2s; }
+.f-input:focus { outline:none; border-color:var(--gold); }
+.f-input::placeholder { color:var(--text4); }
+.btn-gold { background:linear-gradient(135deg,#8B4A0A,#D4A017); color:white; border:none; border-radius:14px; padding:15px; width:100%; font-family:'Playfair Display',serif; font-weight:700; font-size:1rem; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 20px rgba(212,160,23,0.4); margin-top:8px; }
+.btn-gold:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(212,160,23,0.5); }
+.err-msg { background:rgba(160,48,32,0.15); border:1px solid rgba(160,48,32,0.4); border-radius:10px; padding:10px 14px; font-size:0.83rem; color:#D06050; margin-bottom:14px; display:none; }
+
+/* PAINEL */
+header { background:rgba(26,15,6,0.96); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); padding:0 16px; height:60px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.h-logo { font-family:'Playfair Display',serif; font-weight:700; font-size:1.15rem; }
+.h-logo em { color:var(--amber); font-style:italic; }
+.h-right { display:flex; align-items:center; gap:10px; }
+.novos-pill { background:linear-gradient(135deg,#8B4A0A,#D4A017); color:white; border-radius:50px; padding:5px 14px; font-size:0.78rem; font-weight:700; display:none; animation:pulseIn 0.4s ease; }
+@keyframes pulseIn { from{transform:scale(0)} to{transform:scale(1)} }
+.logout-btn { background:none; border:1px solid var(--border); color:var(--text3); border-radius:50px; padding:6px 14px; font-size:0.78rem; cursor:pointer; transition:all 0.2s; }
+.logout-btn:hover { border-color:var(--red); color:#D06050; }
+
+#view-painel { display:none; position:relative; z-index:1; }
+#view-painel.active { display:block; }
+
+.painel-wrap { padding:18px; max-width:720px; margin:0 auto; }
+.p-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
+.p-title { font-family:'Playfair Display',serif; font-weight:800; font-size:1.4rem; }
+.p-title em { color:var(--gold); font-style:italic; }
+.live-badge { display:flex; align-items:center; gap:6px; font-size:0.75rem; color:var(--green); }
+.dot-live { width:8px; height:8px; background:var(--green); border-radius:50%; animation:blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* CARDS PEDIDO */
+.pedidos-list { display:flex; flex-direction:column; gap:14px; }
+
+.pedido-card {
+  background:linear-gradient(160deg,#3D1F08 0%,#2E1606 50%,#3A1C08 100%);
+  border:1px solid var(--border); border-radius:var(--radius);
+  padding:18px; transition:all 0.3s; animation:fadeIn 0.4s ease;
+  box-shadow:0 2px 12px rgba(0,0,0,0.3);
+}
+.pedido-card.novo {
+  border-color:var(--gold);
+  box-shadow:0 0 0 1px var(--gold),0 6px 28px rgba(212,160,23,0.2);
+  animation:fadeIn 0.4s ease, novoPulse 2s ease 3;
+}
+@keyframes novoPulse {
+  0%,100%{box-shadow:0 0 0 1px var(--gold),0 6px 28px rgba(212,160,23,0.2)}
+  50%{box-shadow:0 0 0 4px var(--gold),0 10px 40px rgba(212,160,23,0.4)}
+}
+
+.p-top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.p-id { font-family:'Playfair Display',serif; font-weight:700; color:var(--gold); font-size:1.1rem; }
+.p-hora { color:var(--text4); font-size:0.78rem; }
+.s-pill { font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:50px; }
+.sp-recebido { background:rgba(212,160,23,0.15); color:var(--gold); }
+.sp-aceito { background:rgba(64,128,208,0.15); color:var(--blue); }
+.sp-preparando { background:rgba(208,144,32,0.15); color:var(--yellow); }
+.sp-saiu { background:rgba(144,96,192,0.15); color:var(--purple); }
+.sp-entregue { background:rgba(74,122,40,0.15); color:var(--green); }
+
+.p-cliente { font-family:'Playfair Display',serif; font-weight:700; font-size:1rem; margin-bottom:4px; }
+.p-end { color:var(--text2); font-size:0.83rem; margin-bottom:3px; }
+.p-extras { color:var(--text3); font-size:0.78rem; line-height:1.7; margin-bottom:10px; }
+.p-divider { border:none; border-top:1px solid rgba(107,58,16,0.5); margin:12px 0; }
+
+.p-itens { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+.p-item { display:flex; justify-content:space-between; gap:8px; font-size:0.84rem; }
+.pi-n { color:var(--text2); flex:1; }
+.pi-n strong { color:var(--text); }
+.pi-o { color:var(--gold); font-size:0.72rem; font-style:italic; display:block; }
+.pi-v { color:var(--text); font-weight:700; white-space:nowrap; }
+
+.p-footer { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
+.p-total { font-family:'Playfair Display',serif; font-weight:800; color:var(--gold); font-size:1.25rem; }
+.p-pagto { background:rgba(26,15,6,0.8); border:1px solid var(--border); border-radius:50px; padding:4px 12px; font-size:0.75rem; color:var(--text3); }
+
+.p-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.act { padding:10px 18px; border-radius:12px; border:none; font-family:'Lato',sans-serif; font-size:0.83rem; font-weight:700; cursor:pointer; transition:all 0.2s; }
+.act-aceitar { background:linear-gradient(135deg,#8B4A0A,#D4A017); color:white; box-shadow:0 3px 12px rgba(212,160,23,0.35); }
+.act-aceitar:hover { transform:scale(1.04); box-shadow:0 5px 20px rgba(212,160,23,0.5); }
+.act-avancar { background:rgba(61,31,8,0.9); color:var(--text2); border:1px solid var(--border); }
+.act-avancar:hover { border-color:var(--yellow); color:var(--yellow); }
+.act-recusar { background:rgba(26,15,6,0.8); color:#D06050; border:1px solid rgba(160,48,32,0.3); }
+.act-recusar:hover { background:rgba(160,48,32,0.1); }
+
+.empty-state { text-align:center; padding:64px 20px; color:var(--text3); }
+.empty-state .ei { font-size:4rem; margin-bottom:16px; opacity:0.4; }
+.empty-state p { font-family:'Playfair Display',serif; font-size:1.1rem; }
+.empty-state span { font-size:0.82rem; color:var(--text4); display:block; margin-top:6px; }
+
+.loading { text-align:center; padding:48px; color:var(--text3); position:relative; z-index:1; }
+.spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
+@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="view-login">
+  <div class="login-box">
+    <div class="login-logo">Li<em>no</em></div>
+    <div class="login-sub">Painel da loja — acesso restrito</div>
+    <div class="err-msg" id="err-login">Usuário ou senha incorretos.</div>
+    <div class="f-group"><label>Usuário</label><input type="text" id="l-user" class="f-input" placeholder="Seu usuário"></div>
+    <div class="f-group"><label>Senha</label><input type="password" id="l-senha" class="f-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()"></div>
+    <button class="btn-gold" onclick="login()">Entrar no Painel</button>
+    <div style="margin-top:14px;text-align:center"><a href="index.html" style="color:var(--text4);font-size:0.78rem;text-decoration:none">← Voltar ao início</a></div>
+  </div>
+</div>
+
+<!-- PAINEL -->
+<div id="view-painel">
+  <header>
+    <div class="h-logo">Li<em>no</em> <span style="font-size:0.7rem;color:var(--text4);font-weight:400;font-family:'Lato',sans-serif">Painel</span></div>
+    <div class="h-right">
+      <div class="novos-pill" id="novos-pill">0 novos</div>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <div class="painel-wrap">
+    <div class="p-header">
+      <div class="p-title">Pedidos <em>Ativos</em></div>
+      <div class="live-badge"><span class="dot-live"></span> Tempo real</div>
+    </div>
+    <div id="pedidos-list" class="pedidos-list">
+      <div class="loading"><div class="spinner"></div>Carregando pedidos...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAMRyjrwu9ai3TyWoNYiLI-T8lV_OTbknU",
+  authDomain: "sitelanch.firebaseapp.com",
+  projectId: "sitelanch",
+  storageBucket: "sitelanch.firebasestorage.app",
+  messagingSenderId: "29494207116",
+  appId: "1:29494207116:web:12a1cb66b0efac5c0391a9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const CRED = { user:'Gabriel', senha:'Gabriel' };
+const NEXT = { recebido:'aceito', aceito:'preparando', preparando:'saiu', saiu:'entregue' };
+const NEXT_LABEL = { recebido:'✅ Aceitar', aceito:'👨‍🍳 Preparando', preparando:'🛵 Saiu pra entrega', saiu:'🎉 Entregue' };
+
+let pedidos = {};
+let unsub = null;
+let primeiroLoad = true;
+
+function login() {
+  const user = document.getElementById('l-user').value.trim();
+  const senha = document.getElementById('l-senha').value;
+  const err = document.getElementById('err-login');
+  err.style.display = 'none';
+  if (user !== CRED.user || senha !== CRED.senha) { err.style.display = 'block'; return; }
+  document.getElementById('view-login').style.display = 'none';
+  document.getElementById('view-painel').classList.add('active');
+  iniciar();
+}
+
+function logout() {
+  if (unsub) unsub();
+  location.reload();
+}
+
+function iniciar() {
+  unsub = db.collection('pedidos')
+    .orderBy('criadoEm', 'desc')
+    .onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        const data = change.doc.data();
+        const id = change.doc.id;
+        if (change.type === 'added') {
+          if (!['entregue','recusado'].includes(data.status)) {
+            if (!primeiroLoad) tocarSom();
+            pedidos[id] = { id, ...data };
+          }
+        }
+        if (change.type === 'modified') {
+          if (['entregue','recusado'].includes(data.status)) delete pedidos[id];
+          else pedidos[id] = { id, ...data };
+        }
+        if (change.type === 'removed') delete pedidos[id];
+      });
+      primeiroLoad = false;
+      renderPedidos();
+    }, err => {
+      console.error('Erro ao carregar pedidos:', err);
+      document.getElementById('pedidos-list').innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><p>Erro ao carregar</p><span>Verifique as regras do Firestore</span></div>';
+    });
+}
+
+function renderPedidos() {
+  const list = Object.values(pedidos).sort((a,b) => {
+    const ta = a.criadoEm ? a.criadoEm.toMillis() : 0;
+    const tb = b.criadoEm ? b.criadoEm.toMillis() : 0;
+    return tb - ta;
+  });
+
+  const novos = list.filter(p => p.status === 'recebido').length;
+  const pill = document.getElementById('novos-pill');
+  pill.textContent = novos + (novos === 1 ? ' novo' : ' novos');
+  pill.style.display = novos > 0 ? 'flex' : 'none';
+
+  const el = document.getElementById('pedidos-list');
+  if (list.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="ei">🍔</div><p>Nenhum pedido em aberto</p><span>Novos pedidos aparecem aqui automaticamente</span></div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(p => {
+    const isNovo = p.status === 'recebido';
+    const hora = p.criadoEm ? new Date(p.criadoEm.toMillis()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--:--';
+    const nextS = NEXT[p.status];
+    const nextL = NEXT_LABEL[p.status];
+    const total = Number(p.total);
+    const extras = [
+      p.pontoReferencia ? `📍 ${p.pontoReferencia}` : '',
+      p.obsEntrega ? `📝 ${p.obsEntrega}` : '',
+      p.contato ? `📞 ${p.contato}` : ''
+    ].filter(Boolean).join('  ·  ');
+
+    return `
+      <div class="pedido-card ${isNovo?'novo':''}" id="pc-${p.id}">
+        <div class="p-top">
+          <div><span class="p-id">#${String(p.codigo||'?').padStart(4,'0')}</span><span class="p-hora"> · ${hora}</span></div>
+          <span class="s-pill sp-${p.status}">${getStatusLabel(p.status)}</span>
+        </div>
+        <div class="p-cliente">${p.nomeCliente}</div>
+        <div class="p-end">📦 ${p.endereco}</div>
+        ${extras ? `<div class="p-extras">${extras}</div>` : ''}
+        <hr class="p-divider">
+        <div class="p-itens">
+          ${(p.itens||[]).map(it => `
+            <div class="p-item">
+              <span class="pi-n"><strong>${it.quantidade}x</strong> ${it.nomeProduto}${it.observacao ? `<span class="pi-o">↳ ${it.observacao}</span>` : ''}</span>
+              <span class="pi-v">R$ ${Number(it.subtotal).toFixed(2).replace('.',',')}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="p-footer">
+          <div class="p-total">R$ ${total.toFixed(2).replace('.',',')}</div>
+          <div class="p-pagto">${p.formaPagamento}</div>
+        </div>
+        <div class="p-actions">
+          ${nextS ? `<button class="act ${isNovo?'act-aceitar':'act-avancar'}" onclick="avancar('${p.id}','${nextS}')">${nextL}</button>` : ''}
+          ${isNovo ? `<button class="act act-recusar" onclick="recusar('${p.id}')">✕ Recusar</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function getStatusLabel(s) {
+  return { recebido:'🔔 Novo pedido', aceito:'✅ Aceito', preparando:'👨‍🍳 Preparando', saiu:'🛵 Na entrega', entregue:'🎉 Entregue' }[s] || s;
+}
+
+async function avancar(id, novoStatus) {
+  try { await db.collection('pedidos').doc(id).update({ status: novoStatus }); } catch(e) { alert('Erro ao atualizar pedido.'); }
+}
+async function recusar(id) {
+  if (!confirm('Recusar este pedido?')) return;
+  try { await db.collection('pedidos').doc(id).update({ status: 'recusado' }); } catch(e) { alert('Erro ao recusar pedido.'); }
+}
+
+function tocarSom() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime+0.12);
+    osc.frequency.setValueAtTime(880, ctx.currentTime+0.24);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.5);
+    osc.start(); osc.stop(ctx.currentTime+0.5);
+  } catch(e) {}
+}
+</script>
+</body>
+</html>

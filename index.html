@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lino — Burger Artesanal</title>
+<meta name="theme-color" content="#2C1A0E">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Lato', sans-serif;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px 24px;
+    background: #1A0F06;
+    position: relative; overflow: hidden;
+  }
+  .wood-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      repeating-linear-gradient(175deg, rgba(80,40,10,0) 0px, rgba(80,40,10,0) 8px, rgba(60,30,8,0.18) 8px, rgba(60,30,8,0.18) 9px, rgba(80,40,10,0) 9px, rgba(80,40,10,0) 22px, rgba(40,20,5,0.12) 22px, rgba(40,20,5,0.12) 23px),
+      repeating-linear-gradient(88deg, transparent 0px, transparent 18px, rgba(120,70,20,0.05) 18px, rgba(120,70,20,0.05) 19px, transparent 19px, transparent 42px, rgba(80,40,10,0.07) 42px, rgba(80,40,10,0.07) 43px),
+      linear-gradient(160deg, #3D2008 0%, #2A1406 30%, #1A0F06 60%, #2C1810 100%);
+  }
+  .container { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 40px; width: 100%; max-width: 420px; }
+  .logo-wrap { text-align: center; animation: fadeDown 0.8s ease; }
+  .logo-icon { width: 90px; height: 90px; border-radius: 22px; background: linear-gradient(135deg, #8B4A0A, #D4860A); display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px; box-shadow: 0 8px 32px rgba(212,134,10,0.4); }
+  .logo-name { font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 800; color: #F5E6C8; }
+  .logo-div { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+  .logo-div::before, .logo-div::after { content: ''; flex: 1; max-width: 60px; height: 1px; background: rgba(212,160,23,0.4); }
+  .logo-div span { color: #A07840; font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; }
+  .cards { display: flex; flex-direction: column; gap: 14px; width: 100%; animation: fadeUp 0.8s ease 0.15s both; }
+  .card { border-radius: 20px; padding: 22px 24px; cursor: pointer; text-decoration: none; color: inherit; display: flex; align-items: center; gap: 18px; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); border: 1px solid; }
+  .card-cliente { background: linear-gradient(135deg, #3D2008, #4A2A0A); border-color: #6B3A10; }
+  .card-painel { background: linear-gradient(135deg, #1E1A08, #2A2408); border-color: #4A3E10; }
+  .card:hover { transform: translateY(-4px); }
+  .card-cliente:hover { box-shadow: 0 12px 40px rgba(212,134,10,0.3); border-color: #D4860A; }
+  .card-painel:hover { box-shadow: 0 12px 40px rgba(212,160,23,0.2); border-color: #D4A017; }
+  .card-icon { width: 54px; height: 54px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+  .card-cliente .card-icon { background: rgba(212,134,10,0.18); }
+  .card-painel .card-icon { background: rgba(212,160,23,0.12); }
+  .card-text { flex: 1; }
+  .card-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.1rem; margin-bottom: 3px; color: #F5E6C8; }
+  .card-desc { color: #8B6030; font-size: 0.8rem; }
+  .card-arrow { color: #5C3A14; font-size: 1.4rem; transition: all 0.3s; }
+  .card:hover .card-arrow { color: #D4A017; transform: translateX(5px); }
+  .footer { color: #3D2008; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; animation: fadeUp 0.8s ease 0.3s both; }
+  @keyframes fadeDown { from{opacity:0;transform:translateY(-24px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div class="wood-bg"></div>
+<div class="container">
+  <div class="logo-wrap">
+    <div class="logo-icon">🔥</div>
+    <div class="logo-name">Lino</div>
+    <div class="logo-div"><span>Burger Artesanal</span></div>
+  </div>
+  <div class="cards">
+    <a href="cliente.html" class="card card-cliente">
+      <div class="card-icon">🍔</div>
+      <div class="card-text"><div class="card-title">Fazer Pedido</div><div class="card-desc">Ver cardápio e pedir agora</div></div>
+      <div class="card-arrow">›</div>
+    </a>
+    <a href="painel.html" class="card card-painel">
+      <div class="card-icon">📋</div>
+      <div class="card-text"><div class="card-title">Painel da Loja</div><div class="card-desc">Gerenciar pedidos em tempo real</div></div>
+      <div class="card-arrow">›</div>
+    </a>
+  </div>
+  <p class="footer">Lino Burger © 2025</p>
+</div>
+</body>
+</html>
